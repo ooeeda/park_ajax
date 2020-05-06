@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="com.park.mapper.memberMapper">
+ 
+    <!-- 
+        mybatis-config.xml의 typeAlias에 등록해두지 않았다면 
+        
+        <select id="selectMember" resultType="com.example.dto.MemberVO" >
+            SELECT ID, PW ,NAME FROM TEST
+        </select>
+        
+        이렇게 해야 한다.
+    -->
+    
+    <select id="selectMember" resultType="memberVO">
+        SELECT ID, PW ,NAME FROM TEST
+    </select>
+    
+    <select id="selectBoardCount" resultType="int" >
+        select count(*) from park_board 
+    </select>
+    
+    <select id="selectBoardList" resultType="com.park.vo.boardBean" parameterType="int">
+		select seq, memo, name, subject
+		from (
+		      select @ROWNUM:=@ROWNUM+1 AS rownum ,seq, memo, name, subject
+		        from park_board, (SELECT @ROWNUM:=0) R 
+		        order by seq DESC
+		     ) A where rownum >= #{ParameterName} 
+		          and  rownum <![CDATA[<=]]> #{ParameterName} + 10
+		           
+    
+    </select>
+
+	<select id='boardMaxSeq' resultType="int">
+		select ifnull(max(seq),0)+1 from park_board
+	</select>
+	<!-- <selectKey keyProperty="seq" resultType="int" order="BEFORE"></selectKey> -->
+    <update id="boardWriteInert" parameterType = "com.park.vo.boardBean">    	
+		insert into park_board  (seq, name, memo, subject) 
+		values ( #{newSeq}, #{name}, #{memo}, #{subject} )
+    </update> 
+
+    <update id="boardWriteUpdate" parameterType = "com.park.vo.boardBean">
+		update park_board set pw = #{pw}, memo = #{memo}, name = #{name}, subject =  #{subject} where seq = #{seq}
+    </update> 
+ 
+ 
+    <select id="selectBoard" resultType="com.park.vo.boardBean" parameterType = "int">
+        select seq,memo,name,subject from park_board where seq = #{ParameterName}    
+    </select>
+     
+	<update id="cmmFileInsert" parameterType="com.park.vo.FileBean">
+		<selectKey keyProperty="seq" resultType="int" order="BEFORE">
+			select ifnull(max(seq),0)+1 from commfile
+		</selectKey>		
+		insert into commfile (seq, org_file_name, local_file_name, save_time)
+		values (#{seq},#{org_file_name},#{local_file_name},now())
+	</update>
+
+	<update id="fileSeqUpdate" parameterType="com.park.vo.FileBean">
+			update commfile set board_seq = #{board_seq} where local_file_name = #{local_file_name}
+	</update>
+
+	<select id="cmmfileSelect" parameterType="int" resultType="com.park.vo.FileBean">
+			select seq, org_file_name, local_file_name, save_time, board_seq from commfile where board_seq = #{seq}
+	</select>			
+</mapper>
+
+
